@@ -19,7 +19,9 @@ class Cube(object):
     def move(self, dirnx, dirny):
         self.dirnx = dirnx
         self.dirny = dirny
-        self.pos = (self.pos[0] + self.dirnx, self.pos[1] + self.dirny)
+        new_x = (self.pos[0] + self.dirnx) % self.rows
+        new_y = (self.pos[1] + self.dirny) % self.rows
+        self.pos = (new_x, new_y)
     def draw(self, surface, eyes=False):
         dis = size // rows
         rw = self.pos[0]
@@ -72,20 +74,8 @@ class Snake(object):
                 if i == len(self.body) - 1:
                     self.turns.pop(p)
             else:
-                if c.dirnx == -1 and c.pos[0] <= 0:
-                    self.game_over("ze zmęczenia")
-                    return False
-                elif c.dirnx == 1 and c.pos[0] >= c.rows - 1:
-                    self.game_over("ze zmęczenia")
-                    return False
-                elif c.dirny == 1 and c.pos[1] >= c.rows - 1:
-                    self.game_over("ze zmęczenia")
-                    return False
-                elif c.dirny == -1 and c.pos[1] <= 0:
-                    self.game_over("ze zmęczenia")
-                    return False
-                else:
-                    c.move(c.dirnx, c.dirny)
+                # move normally; Cube.move now handles wrap-around at edges
+                c.move(c.dirnx, c.dirny)
 
         if self.head.pos in [c.pos for c in self.body[1:]]:
             self.game_over("przez podziwianie się")
@@ -96,13 +86,25 @@ class Snake(object):
     def game_over(self, przyczyna):
         root = tk.Tk()
         root.withdraw()
+        try:
+            root.attributes("-topmost", True)
+        except Exception:
+            pass
+        try:
+            root.lift()
+            root.focus_force()
+        except Exception:
+            pass
+
         odpowiedz = messagebox.askyesno(
-            "Fulgrim poszedł spać", 
-            "Fulgrim poszedł spać " + przyczyna + "\nZdobyte kocyki: " + str(len(self.body)-1) + "\nCzy chcesz zagrać jeszcze raz?"
-            )
-        
+            "Fulgrim poszedł spać",
+            "Fulgrim poszedł spać " + przyczyna + "\nZdobyte kocyki: " + str(len(self.body)-1) + "\nCzy chcesz zagrać jeszcze raz?",
+            parent=root
+        )
+
+        root.destroy()
+
         if odpowiedz == True:
-            root.destroy()
             reset_game()
         else:
             pygame.quit()
